@@ -29,7 +29,7 @@ public class AzureDevOpsIssuesClient
     /// <param name="title">Title of issue.</param>
     /// <param name="description">HTML string of description of the issue.</param>
     /// <returns></returns>
-    public WorkItem? CreateBugUsingClientLib(string title, string description)
+    public WorkItem? CreateIssueUsingClientLib(string title, string description)
     {
         Uri uri = new Uri(_uri);
         string personalAccessToken = _personalAccessToken;
@@ -52,7 +52,7 @@ public class AzureDevOpsIssuesClient
             new JsonPatchOperation()
             {
                 Operation = Operation.Add,
-                Path = "/fields/Microsoft.System.Description",
+                Path = "/fields/System.Description",
                 Value = description
             }
         );
