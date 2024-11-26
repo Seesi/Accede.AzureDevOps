@@ -10,12 +10,12 @@ var pat = configuration.GetSection("pat")?.Value ?? throw new ArgumentException(
 var orgName = configuration.GetSection("orgName")?.Value ?? throw new ArgumentException("Organization Name was not specified");
 var orgProject = configuration.GetSection("orgProject")?.Value ?? throw new ArgumentException("Project Name was not specified");
 
-var bug = new AzureDevOpsIssuesClient(
+var issue = new AzureDevOpsIssuesClient(
     orgName,
     orgProject,
     pat);
 
-bug.CreateIssueUsingClientLib(
+issue.CreateIssueUsingClientLib(
     "Submit Button Sometimes Inactive on Load",
     """
     <h1>🚨 Submit Button Sometimes Inactive on Load 🛠️</h1>
@@ -51,4 +51,21 @@ bug.CreateIssueUsingClientLib(
     """);
 
 
+var bug = new AzureDevOpsBugsClient(
+    orgName,
+    orgProject,
+    pat);
 
+bug.CreateBugUsingClientLib(
+    "Test Slack Webhook Bug v5",
+    
+"""
+    <ul>
+        <li>Complaint 1</li>
+        <li>Complaint 2</li>
+        <li>Complaint 3</li>
+        <li>Complaint 4</li>
+        <li>Complaint 5</li>
+    </ul>
+""",
+    "complaints");

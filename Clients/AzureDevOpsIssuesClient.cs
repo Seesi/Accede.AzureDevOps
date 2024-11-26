@@ -16,7 +16,10 @@ public class AzureDevOpsIssuesClient
     /// <summary>
     /// Constructor. Manually set values to match your organization. 
     /// </summary>
-    public AzureDevOpsIssuesClient(string organizationName, string projectName, string personalAccessToken)
+    public AzureDevOpsIssuesClient(
+        string organizationName,
+        string projectName,
+        string personalAccessToken)
     {
         _uri = $"https://dev.azure.com/{organizationName}";
         _project = projectName;
@@ -28,8 +31,12 @@ public class AzureDevOpsIssuesClient
     /// </summary>
     /// <param name="title">Title of issue.</param>
     /// <param name="description">HTML string of description of the issue.</param>
+    /// <param name="tags">Tags: e.g. "demo, bug, complaints"</param>
     /// <returns></returns>
-    public WorkItem? CreateIssueUsingClientLib(string title, string description)
+    public WorkItem? CreateIssueUsingClientLib(
+        string title,
+        string description,
+        string? tags = "")
     {
         Uri uri = new Uri(_uri);
         string personalAccessToken = _personalAccessToken;
@@ -56,6 +63,18 @@ public class AzureDevOpsIssuesClient
                 Value = description
             }
         );
+        if (!string.IsNullOrEmpty(tags))
+        {
+
+            patchDocument.Add(
+                new JsonPatchOperation()
+                {
+                    Operation = Operation.Add,
+                    Path = "/fields/System.Tags",
+                    Value = tags
+                }
+            );
+        }
 
         VssConnection connection = new VssConnection(uri, credentials);
         WorkItemTrackingHttpClient workItemTrackingHttpClient = connection.GetClient<WorkItemTrackingHttpClient>();

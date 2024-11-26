@@ -17,21 +17,22 @@ public class AzureDevOpsBugsClient
     /// <summary>
     /// Constructor. Manually set values to match your organization. 
     /// </summary>
-    public AzureDevOpsBugsClient(string organizationName,string projectName,string personalAccessToken)
+    public AzureDevOpsBugsClient(string organizationName, string projectName, string personalAccessToken)
     {
         _uri = $"https://dev.azure.com/{organizationName}";
         _project = projectName;
         _personalAccessToken = personalAccessToken;
     }
 
-     
+
     /// <summary>
     /// Create a bug in Azure DevOps
     /// </summary>
     /// <param name="title">Title of bug</param>
     /// <param name="stepToReproduce">HTML string of steps to reproduce bug</param>
+    /// <param name="tags">Tags: e.g. "demo, bug, complaints"</param>
     /// <returns></returns>
-    public WorkItem? CreateBugUsingClientLib(string title,string stepToReproduce)
+    public WorkItem? CreateBugUsingClientLib(string title, string stepToReproduce,string? tags = "")
     {
         Uri uri = new Uri(_uri);
         string personalAccessToken = _personalAccessToken;
@@ -64,7 +65,7 @@ public class AzureDevOpsBugsClient
             {
                 Operation = Operation.Add,
                 Path = "/fields/Microsoft.VSTS.Common.Priority",
-                Value = "1"
+                Value = $"{(int)Priority.Lowest}"
             }
         );
 
@@ -73,9 +74,22 @@ public class AzureDevOpsBugsClient
             {
                 Operation = Operation.Add,
                 Path = "/fields/Microsoft.VSTS.Common.Severity",
-                Value = "2 - High"
+                Value = Severity.LOW
             }
         );
+
+        if (!string.IsNullOrEmpty(tags))
+        {
+
+            patchDocument.Add(
+                new JsonPatchOperation()
+                {
+                    Operation = Operation.Add,
+                    Path = "/fields/System.Tags",
+                    Value = tags
+                }
+            );
+        }
         VssConnection connection = new VssConnection(uri, credentials);
         WorkItemTrackingHttpClient workItemTrackingHttpClient = connection.GetClient<WorkItemTrackingHttpClient>();
 
