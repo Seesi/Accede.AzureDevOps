@@ -1,5 +1,4 @@
-namespace ReportBugInAzureDevOps;
-
+namespace Accede.AzureDevOps.Models;
 public enum Priority
 {
     Highest = 1,
