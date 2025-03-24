@@ -16,11 +16,11 @@ public class AzureDevOpsBugsClient(
 {
     private readonly ILogger<AzureDevOpsBugsClient> _logger = logger;
 
-    public new async Task<int?> CreateBugWithAttachment(BugInput input, IFormFile file)
+    public new async Task<int?> CreateBugWithAttachments(BugInput input, IFormFile[] files)
     {
         try
         {
-            var workItemId = await base.CreateBugWithAttachment(input, file);
+            var workItemId = await base.CreateBugWithAttachments(input, files);
             _logger.LogInformation("Bug Successfully Created: Bug #{workItemId}", workItemId);
             return workItemId;
         }

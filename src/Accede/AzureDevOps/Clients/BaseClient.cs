@@ -103,15 +103,15 @@ public abstract class BaseClient(AzureDevOpsWorkItemConfiguration configuration)
         return workItem?.Id;
     }
 
-    public async Task<int?> CreateBugWithAttachment(BugInput input, IFormFile file)
+    public async Task<int?> CreateBugWithAttachments(BugInput input, IFormFile[] files)
     {
         var workItemId = await CreateBugAsync(input, true);
         if (workItemId == null) return null;
 
-        var attachmentLinkUrl = await CreateAttachment(file);
-        if (string.IsNullOrEmpty(attachmentLinkUrl)) return null;
+        string[] attachmentLinkUrls = await CreateAttachmentsAsync(files);
+        if (attachmentLinkUrls != null && attachmentLinkUrls.Length == 0) return null;
 
-        return await AddAttachmentToWorkItem(workItemId.Value, attachmentLinkUrl, input.Comments);
+        return await AddAttachmentToWorkItems(workItemId.Value, attachmentLinkUrls!, input.Comments);
     }
 
     public async Task<int?> CreateIssueAsync(IssueInput input, bool hasAttachment = false)
@@ -164,15 +164,15 @@ public abstract class BaseClient(AzureDevOpsWorkItemConfiguration configuration)
         return workItem?.Id;
     }
 
-    public async Task<int?> CreateIssueWithAttachmentAsync(IssueInput input, IFormFile file)
+    public async Task<int?> CreateIssueWithAttachmentsAsync(IssueInput input, IFormFile[] files)
     {
         var workItemId = await CreateIssueAsync(input, true);
         if (workItemId == null) return null;
 
-        var attachmentLinkUrl = await CreateAttachment(file);
-        if (string.IsNullOrEmpty(attachmentLinkUrl)) return null;
+        string[] attachmentLinkUrls = await CreateAttachmentsAsync([.. files]);
+        if (attachmentLinkUrls != null && attachmentLinkUrls?.Length == 0) return null;
 
-        return await AddAttachmentToWorkItem(workItemId.Value, attachmentLinkUrl, input.Comments);
+        return await AddAttachmentToWorkItems(workItemId.Value, attachmentLinkUrls!, input.Comments);
     }
 
     #region Helper Methods
@@ -194,12 +194,40 @@ public abstract class BaseClient(AzureDevOpsWorkItemConfiguration configuration)
         return attachment?.Url;
     }
 
-    private async Task<int?> AddAttachmentToWorkItem(int workItemId, string attachmentLinkUrl, string? comments = "")
+    private async Task<string[]> CreateAttachmentsAsync(IFormFile[] files)
+    {
+        if (files == null || files.Length == 0)
+            return [];
+
+        var client = Client ?? CreateClient(); // Reuse or create a client
+        var uploadTasks = files.Select(async file =>
+        {
+            using var stream = new MemoryStream();
+            await file.CopyToAsync(stream);
+            stream.Position = 0;
+        
+            var attachment = await client.CreateAttachmentAsync(
+                uploadStream: stream,
+                project: config.ProjectName,
+                fileName: file.FileName,
+                areaPath: null,
+                uploadType: UploadType.Simple.ToString(),
+                userState: null);
+        
+            return attachment?.Url ?? "";
+        });
+
+        return await Task.WhenAll(uploadTasks);
+
+    }
+
+
+    private async Task<int?> AddAttachmentToWorkItems(int workItemId, string[] attachmentLinkUrls, string? comments = "")
     {
         var client = Client ?? CreateClient();
-        JsonPatchDocument? patchDocument =
-        [
-            new()
+
+        JsonPatchDocument? patchDocument = [..
+             attachmentLinkUrls.Select(attachmentLinkUrl => new JsonPatchOperation()
             {
                 Operation = Operation.Add,
                 Path = "/relations/-",
@@ -212,8 +240,8 @@ public abstract class BaseClient(AzureDevOpsWorkItemConfiguration configuration)
                         Comment = comments
                     }
                 }
-            }
-        ];
+            }).ToList()];
+
         var workItem = await client.UpdateWorkItemAsync(
             document: patchDocument,
             project: config.ProjectName,
@@ -223,17 +251,6 @@ public abstract class BaseClient(AzureDevOpsWorkItemConfiguration configuration)
             suppressNotifications: true,
             expand: null);
         return workItem.Id;
-    }
-
-    private static IFormFile CreateIFormFile(string filePath)
-    {
-        var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
-
-        return new FormFile(fileStream, 0, fileStream.Length, "file", Path.GetFileName(filePath))
-        {
-            Headers = new HeaderDictionary(),
-            ContentType = "image/png" // Change if needed
-        };
     }
     #endregion
 }

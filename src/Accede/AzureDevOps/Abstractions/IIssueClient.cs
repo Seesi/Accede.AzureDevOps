@@ -7,5 +7,5 @@ namespace Accede.AzureDevOps.Accede.AzureDevOps.Abstractions;
 public interface IIssueClient
 {
     Task<int?> CreateIssueAsync(IssueInput input);
-    Task<int?> CreateIssueWithAttachmentAsync(IssueInput input, IFormFile file);
+    Task<int?> CreateIssueWithAttachmentAsync(IssueInput input, IFormFile[] file);
 }

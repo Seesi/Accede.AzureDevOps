@@ -32,11 +32,11 @@ public class AzureDevOpsIssuesClient(
         }
     }
 
-    public async new Task<int?> CreateIssueWithAttachmentAsync(IssueInput input, IFormFile file)
+    public async Task<int?> CreateIssueWithAttachmentAsync(IssueInput input, IFormFile[] files)
     {
         try
         {
-            var workItemId = await base.CreateIssueWithAttachmentAsync(input, file);
+            var workItemId = await base.CreateIssueWithAttachmentsAsync(input, files);
 
             _logger.LogInformation("Issue Successfully Created: Issue: #{workItemId}", workItemId);
 

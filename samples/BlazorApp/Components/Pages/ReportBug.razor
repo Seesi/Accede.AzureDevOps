@@ -1,0 +1,90 @@
+﻿@page "/report-bug"
+@rendermode InteractiveServer
+@using Accede.AzureDevOps.Configuration
+@using Accede.AzureDevOps.Models
+@using BlazorApp.Extensions
+@using Microsoft.Extensions.Options
+@using ReportBugInAzureDevOps.Accede.AzureDevOps.Abstractions
+
+@inject IOptions<AzureDevOpsWorkItemConfiguration>? Configuration
+@inject ILogger<ReportBug> Logger
+@inject IBugClient BuggerReporter
+@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+
+<PageTitle>Report Bug</PageTitle>
+<h2>Report Issue on Azure DevOps - @Configuration?.Value.OrganizationName / @Configuration?.Value.ProjectName</h2>
+
+<form method="post" @onsubmit="Submit" @formname="report-bug-form">
+    <AntiforgeryToken />
+    <div class="mb-3">
+        <label class="form-label">Title:</label>
+        <InputText class="form-control" @bind-Value="Model.Title" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">StepToReproduce:</label>
+        <InputTextArea class="form-control" @bind-Value="Model.StepToReproduce" />
+
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Priority:</label>
+        <InputSelect class="form-select" @bind-Value="Model.Priority">
+            @foreach (var type in Enum.GetValues(typeof(Priority)).Cast<Priority>())
+            {
+                <option value="@type">@type.ToString()</option>
+            }
+        </InputSelect>
+    </div>
+    
+    <div class="mb-3">
+        <label class="form-label">Attachments:</label>
+        <InputFile class="form-control" OnChange="HandleFiles" multiple />
+    </div>
+
+    <div>
+        <button class="btn btn-primary" type="submit">Submit</button>
+    </div>
+</form>
+
+@code {
+    [SupplyParameterFromForm]
+    private BugInputDto Model { get; set; } = new() { Title = "", StepToReproduce = "" };
+
+    private List<IFormFile> Files { get; set; } = new();
+    private async Task Submit()
+    {
+        if (Files.Count == 0)
+        {
+            Logger.LogDebug("Files is empty");
+            return;
+        }
+
+        var result = await BuggerReporter.CreateBugWithAttachments(new BugInput()
+        {
+            Title = Model.Title,
+            StepToReproduce = Model.StepToReproduce,
+            Priority = Model.Priority,
+        }, Files.ToArray());
+
+        if (result > 0)
+            Logger.LogInformation("Request was successful");
+        else
+            Logger.LogError("Request failed");
+    }
+
+    private async Task HandleFiles(InputFileChangeEventArgs args)
+    {
+        var files = args.GetMultipleFiles();
+        Files = await FileConversionHelper.ConvertToIFormFileListAsync(files.ToList());
+    }
+    private record BugInputDto
+    {
+        public required string Title { get; set; }
+        public Priority Priority { get; set; }
+        public Severity Severity { get; set; }
+        public required string StepToReproduce { get; set; }
+    }
+}
