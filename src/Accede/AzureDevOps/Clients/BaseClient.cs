@@ -59,15 +59,10 @@ public abstract class BaseClient(AzureDevOpsWorkItemConfiguration configuration)
                     Severity.Medium => "3 - Medium",
                     _ => "4 - Low"
                 }
-            },
-            new JsonPatchOperation(){
-                Operation = Operation.Add,
-                Path = "/fields/System.AssignedTo",
-                Value = ""
             }
         ];
 
-        if (string.IsNullOrEmpty(input.AssignTo))
+        if (!string.IsNullOrEmpty(input.AssignTo))
         {
             patchDocument.Add(new JsonPatchOperation()
             {
@@ -91,12 +86,8 @@ public abstract class BaseClient(AzureDevOpsWorkItemConfiguration configuration)
 
         if (hasAttachment)
         {
-            patchDocument.Add(new JsonPatchOperation()
-            {
-                Operation = Operation.Add,
-                Path = "/fields/Microsoft.VSTS.TCM.ReproSteps",
-                Value = "Please find attached screenshots of the issue reported"
-            });
+            var stepsToReproduce = patchDocument.First(m=>m.Path== "/fields/Microsoft.VSTS.TCM.ReproSteps");
+            stepsToReproduce.Value += "<br/>Please find attached screenshots of the bug reported";
         }
 
         WorkItem? workItem = await client.CreateWorkItemAsync(patchDocument, config.ProjectName, "Bug");
@@ -150,7 +141,7 @@ public abstract class BaseClient(AzureDevOpsWorkItemConfiguration configuration)
             );
         }
 
-        if (string.IsNullOrEmpty(input.AssignTo))
+        if (!string.IsNullOrEmpty(input.AssignTo))
         {
             patchDocument.Add(new JsonPatchOperation()
             {
@@ -160,6 +151,11 @@ public abstract class BaseClient(AzureDevOpsWorkItemConfiguration configuration)
             });
         }
 
+        if (hasAttachment)
+        {
+            var stepsToReproduce = patchDocument.First(m=>m.Path== "/fields/System.Description");
+            stepsToReproduce.Value += "<br/>Please find attached screenshots of the issue reported";
+        }
         WorkItem workItem = await client.CreateWorkItemAsync(patchDocument, config.ProjectName, "Issue");
         return workItem?.Id;
     }
