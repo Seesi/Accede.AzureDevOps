@@ -1,0 +1,14 @@
+﻿@page "/report-issue"
+@using Accede.AzureDevOps.Configuration
+@using Microsoft.Extensions.Options
+
+@inject IOptions<AzureDevOpsWorkItemConfiguration>? Configuration
+@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+
+<PageTitle>Report Bug</PageTitle>
+<h4>Report Issue on Azure DevOps - @Configuration?.Value.OrganizationName / @Configuration?.Value.ProjectName</h4>
+@{
+
+}
